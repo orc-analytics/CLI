@@ -5,6 +5,9 @@ const (
 	redisContainerName = "orca-redis-instance"
 	orcaContainerName  = "orca-instance"
 	networkName        = "orca-network"
+
+	// versions
+	orcaImageVersion = "0.11.0-rc.a2238d2"
 )
 
 var orcaContainers = []string{

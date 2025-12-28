@@ -462,7 +462,7 @@ func destroy() {
 	)
 	fmt.Println(infoStyle.Render("  docker rmi postgres               # Remove PostgreSQL image"))
 	fmt.Println(infoStyle.Render("  docker rmi redis                  # Remove Redis image"))
-	fmt.Println(infoStyle.Render("  docker rmi ghcr.io/orc-analytics/orca  # Remove Orca image"))
+	fmt.Println(infoStyle.Render("  docker rmi ghcr.io/orc-analytics/core  # Remove Orca image"))
 	fmt.Println()
 	fmt.Println(infoStyle.Render("Or to remove all unused images:"))
 	fmt.Println(infoStyle.Render("  docker image prune -a  # Remove all unused images"))

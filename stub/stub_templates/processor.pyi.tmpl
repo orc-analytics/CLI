@@ -1,0 +1,31 @@
+from orca_python import (
+    Processor,
+    WindowType,
+    StructResult,
+    ValueResult,
+    NoneResult,
+    ArrayResult,
+    MetadataField,
+    ExecutionParams,
+)
+{{ range .Processors -}}
+# --- Processor Start ---
+proc_{{ .Name | SanitiseVariableName }}: Processor
+
+# --- Metadata Fields ---
+{{range .Metadata -}}
+{{ .VarName | SanitiseVariableName }}: MetadataField
+
+{{ end }}
+# --- Window Types ---
+{{ range .Windows -}}
+{{ .VarName | SanitiseVariableName }}: WindowType
+
+{{ end }}
+# --- Algorithms ---
+{{ range .Algorithms -}}
+def {{ .VarName | ToSnakeCase | SanitiseVariableName }}(params: ExecutionParams) -> {{ .ReturnType }}: ...
+
+{{ end }}
+# --- Processor End ---
+{{- end }}

@@ -2,7 +2,7 @@
 
 set -e
 
-REPO="orc-analytics/orca"
+REPO="orc-analytics/cli"
 INSTALL_NAME="orca"
 
 # Disallow root user
@@ -103,7 +103,7 @@ install_binary() {
   echo ""
   echo "✅ Orca CLI installed to: $FINAL_BINARY"
   echo "✅ Symlink created at: $SYMLINK_PATH"
-  echo "🔗 To get started, visit: https://github.com/orc-analytics/Orca#readme"
+  echo "🔗 To get started, visit: https://github.com/orc-analytics/core#readme"
 }
 
 # Run install steps

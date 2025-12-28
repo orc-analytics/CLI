@@ -3,14 +3,16 @@ package stub
 import (
 	"embed"
 	"fmt"
+	"hash/crc32"
 	"os"
 	"path/filepath"
+	"strconv"
 	"text/template"
 
 	pb "github.com/orc-analytics/core/protobufs/go"
 )
 
-const PYTHON_STUB_FILE = "stub_templates/processor.py.tmpl"
+const PYTHON_STUB_FILE = "stub_templates/processor.pyi.tmpl"
 
 //go:embed stub_templates/*.tmpl
 var templateFS embed.FS
@@ -30,7 +32,8 @@ func init() {
 	baseName := filepath.Base(PYTHON_STUB_FILE)
 	pythonTemplate = template.Must(template.New(baseName).Funcs(
 		template.FuncMap{
-			"ToSnakeCase": toSnakeCase,
+			"ToSnakeCase":          toSnakeCase,
+			"SanitiseVariableName": sanitiseVariableName,
 		}).ParseFS(templateFS, PYTHON_STUB_FILE))
 }
 
@@ -45,6 +48,26 @@ func toSnakeCase(s string) string {
 		} else {
 			result = append(result, r)
 		}
+	}
+	return string(result)
+}
+
+func sanitiseVariableName(s string) string {
+	var result []rune
+	for i, r := range s {
+		if i == 0 {
+			if _, err := strconv.Atoi(string(r)); err == nil {
+				result = append(result, '_')
+				result = append(result, r)
+				continue
+			}
+		}
+		if r == '.' {
+			result = append(result, '_')
+		} else {
+			result = append(result, r)
+		}
+
 	}
 	return string(result)
 }
@@ -66,9 +89,12 @@ type Window struct {
 
 type Algorithm struct {
 	Name          string
+	VarName       string
+	ProcessorName string
 	Version       string
 	WindowVarName string
 	ReturnType    ReturnType
+	Hash          string
 }
 
 type ProcessorData struct {
@@ -138,12 +164,28 @@ func mapInternalStateToTmpl(internalState *pb.InternalState) (error, *AllProcess
 					proc.GetRuntime(),
 				), nil
 			}
+			// algorithm hash - algorithms are unique by their relationship
+			// to the processor and triggering window. the name is irrelevant,
+			// but needs to be distinguishable
+			// crc32 is fine - liklihood of collision is small & it's convenient
+
+			h := crc32.NewIEEE()
+			h.Write([]byte(proc.GetName()))
+			h.Write([]byte(proc.GetConnectionStr()))
+			h.Write([]byte(algo.GetWindowType().GetName()))
+			h.Write([]byte(algo.GetWindowType().GetVersion()))
+			h.Write([]byte(algo.GetName()))
+			h.Write([]byte(algo.GetVersion()))
+			algorithmHash := h.Sum32()
 
 			supportedAlgorithms[jj] = Algorithm{
 				Name:          algo.GetName(),
+				VarName:       fmt.Sprintf("%v_%x", algo.GetName(), algorithmHash),
+				ProcessorName: proc.GetName(),
 				Version:       algo.GetVersion(),
 				ReturnType:    algoReturnType,
-				WindowVarName: fmt.Sprintf("%v_stub", algo.GetWindowType().GetName()),
+				WindowVarName: fmt.Sprintf("%v_%v_stub", algo.GetWindowType().GetName(), algo.GetWindowType().GetVersion()),
+				Hash:          fmt.Sprintf("%x", algorithmHash),
 			}
 		}
 
@@ -175,7 +217,7 @@ func GeneratePythonStub(internalState *pb.InternalState, outDir string) error {
 		return fmt.Errorf("could not parse internal state: %w", err)
 	}
 
-	outFile, err := os.Create("orca_stub.py")
+	outFile, err := os.Create("orca_stub.pyi")
 
 	if err != nil && !os.IsExist(err) {
 		return err
