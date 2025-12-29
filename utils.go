@@ -248,7 +248,7 @@ func showStatus() {
 	fmt.Println(subHeaderStyle.Render("PostgreSQL:"), statusColor(pgStatus).Render(pgStatus))
 
 	if pgStatus == "running" {
-		pgPort := getContainerPort(pgContainerName, 5432)
+		pgPort := getContainerPort(pgContainerName, pgInternalPort)
 		conn := fmt.Sprintf("postgresql://orca:orca@localhost:%s/orca?sslmode=disable", pgPort)
 		fmt.Println(infoStyle.Render("Connection string: " + conn))
 	}
@@ -260,7 +260,7 @@ func showStatus() {
 	fmt.Println(subHeaderStyle.Render("Redis:"), statusColor(redisStatus).Render(redisStatus))
 
 	if redisStatus == "running" {
-		redisPort := getContainerPort(redisContainerName, 6379)
+		redisPort := getContainerPort(redisContainerName, redisInternalPort)
 		conn := fmt.Sprintf("redis://localhost:%s", redisPort)
 		fmt.Println(infoStyle.Render("Connection string: " + conn))
 	}
@@ -272,7 +272,7 @@ func showStatus() {
 	fmt.Println(subHeaderStyle.Render("Orca:"), statusColor(orcaStatus).Render(orcaStatus))
 
 	if orcaStatus == "running" {
-		orcaPort := getContainerPort(orcaContainerName, 3335)
+		orcaPort := getContainerPort(orcaContainerName, orcaInternalPort)
 		conn := fmt.Sprintf("localhost:%s", orcaPort)
 		fmt.Println(infoStyle.Render("Connection string: " + conn))
 		fmt.Println()
@@ -301,7 +301,6 @@ func getContainerStatus(containerName string) string {
 		"{{.Status}}",
 	)
 	output, err := cmd.CombinedOutput()
-
 	if err != nil || len(output) == 0 {
 		return "not found"
 	}
@@ -514,4 +513,19 @@ func getNetworkGatewayIP() string {
 		return ""
 	}
 	return string(output)
+}
+
+func toCamelCase(s string) string {
+	s = strings.ReplaceAll(s, "-", " ")
+	s = strings.ReplaceAll(s, "_", " ")
+	words := strings.Fields(s)
+	if len(words) == 0 {
+		return s
+	}
+	result := strings.ToLower(words[0])
+	for i := 1; i < len(words); i++ {
+		result += strings.Title(strings.ToLower(words[i]))
+	}
+
+	return result
 }
