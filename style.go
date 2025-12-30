@@ -10,34 +10,19 @@ import (
 )
 
 var (
-
-	// Soft blue subheadings
-	subHeaderStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#7aa2f7")). // muted periwinkle
-			Bold(true)
-
 	// Gentle green for success
 	successStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#9ece6a")) // desaturated lime
+			Foreground(lipgloss.Color("#9ece6a"))
 
 	// Subtle gold for warnings
 	warningStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#e0af68")). // sandy gold
+			Foreground(lipgloss.Color("#e0af68")).
 			Bold(true)
 
 	// Muted red for errors
 	errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#f7768e")). // rosy red
+			Foreground(lipgloss.Color("#f7768e")).
 			Bold(true)
-
-	// Cool teal for info messages
-	infoStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#7dcfff")) // soft cyan
-
-	// Gray prefix symbol
-	prefixStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#565f89")). // pastel gray-blue
-			SetString("→")
 )
 
 func init() {

@@ -105,7 +105,7 @@ func main() {
 		startOrca(networkName)
 		fmt.Println()
 
-		fmt.Println(renderSuccess("✅ Orca stack started successfully."))
+		fmt.Println(renderSuccess(" Orca stack started successfully."))
 		fmt.Println()
 
 	case "stop":
@@ -135,7 +135,7 @@ func main() {
 		stopContainers()
 
 		fmt.Println()
-		fmt.Println(renderSuccess("✅ All containers stopped."))
+		fmt.Println(renderSuccess(" All containers stopped."))
 		fmt.Println()
 
 	case "status":
@@ -304,10 +304,10 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Println("orca.json created successfully!")
-		fmt.Printf("Project Name: %s\n", newConfig.ProjectName)
-		fmt.Printf("Connection String: %s\n", newConfig.OrcaConnectionString)
-		fmt.Printf("Processor Port: %d\n", newConfig.ProcessorPort)
+		fmt.Println(successStyle.Render("orca.json created successfully!"))
+		fmt.Printf("Project name: %s\n", newConfig.ProjectName)
+		fmt.Printf("Orca connection string: %s\n", newConfig.OrcaConnectionString)
+		fmt.Printf("Processor port: %d\n", newConfig.ProcessorPort)
 
 	case "sync":
 		outDir := syncCmd.String("out", "./.orca", "Output directory for Orca registry data")
@@ -384,7 +384,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Println(renderSuccess(fmt.Sprintf("✅ registry data generated successfully in %s", filepath.Join(*outDir, "registry.json"))))
+		fmt.Println(renderSuccess(fmt.Sprintf("registry data generated successfully in %s", filepath.Join(*outDir, "registry.json"))))
 
 	case "help":
 		fmt.Println()
