@@ -324,6 +324,8 @@ func main() {
 		tgtSdk := syncCmd.String("sdk", "", "The SDK to generate type stubs for - python|go|typescript|zig|rust (defaults to inferring from the environment)")
 		secure := syncCmd.Bool("secure", false, "Set to connect to Orca core with System Default Root CA credentials (via TLS). Only use when using a custom Orca connection string that supports TLS")
 		caCert := syncCmd.String("caCert", "", "Path to custom CA certificate file (PEM format) for TLS verification")
+		configPath := syncCmd.String("config", "orca.json", "Path to orca.json configuration file")
+		projectNameOverride := syncCmd.String("projectName", "", "Override project name to exclude from sync stubs. Overrides the project name in the orca config file")
 
 		syncCmd.Usage = func() {
 			fmt.Fprintf(os.Stderr, "Usage: orca sync [options]\n\n")
@@ -345,6 +347,47 @@ func main() {
 			fmt.Println("Run 'orca sync help' for usage information.")
 			fmt.Println()
 			os.Exit(1)
+		}
+
+		type OrcaConfigFile struct {
+			ProjectName               string `json:"projectName"`
+			OrcaConnectionString      string `json:"orcaConnectionString"`
+			ProcessorPort             int    `json:"processorPort"`
+			ProcessorConnectionString string `json:"processorConnectionString"`
+		}
+
+		// parse orca.json configuration
+		var projectName string
+		if *projectNameOverride != "" {
+			// use the command-line override if provided
+			projectName = *projectNameOverride
+			fmt.Printf("Using project name from command line: %s\n", projectName)
+		} else {
+			// try to load from config file
+			if _, err := os.Stat(*configPath); err == nil {
+				configData, err := os.ReadFile(*configPath)
+				if err != nil {
+					fmt.Println(renderError(fmt.Sprintf("Failed to read %s: %v", *configPath, err)))
+					os.Exit(1)
+				}
+
+				var config OrcaConfigFile
+				err = json.Unmarshal(configData, &config)
+				if err != nil {
+					fmt.Println(renderError(fmt.Sprintf("Failed to parse %s: %v", *configPath, err)))
+					os.Exit(1)
+				}
+
+				projectName = config.ProjectName
+				if projectName != "" {
+					fmt.Printf("Using project name from %s: %s\n", *configPath, projectName)
+				}
+			} else if *configPath != "orca.json" {
+				// Only error if user explicitly specified a config file that doesn't exist
+				fmt.Println(renderError(fmt.Sprintf("Config file not found: %s", *configPath)))
+				os.Exit(1)
+			}
+			// if default orca.json doesn't exist and no override provided, projectName remains empty string
 		}
 
 		type SDKType string
@@ -468,7 +511,14 @@ func main() {
 		defer conn.Close()
 
 		orcaCoreClient := pb.NewOrcaCoreClient(conn)
-		internalState, err := orcaCoreClient.Expose(context.Background(), &pb.ExposeSettings{})
+		var internalState *pb.InternalState
+		if len(projectName) > 0 {
+			internalState, err = orcaCoreClient.Expose(context.Background(), &pb.ExposeSettings{
+				ExcludeProject: projectName,
+			})
+		} else {
+			internalState, err = orcaCoreClient.Expose(context.Background(), &pb.ExposeSettings{})
+		}
 
 		if err != nil {
 			fmt.Println(renderError(fmt.Sprintf("Issue contacting Orca: %v", err)))
@@ -498,6 +548,10 @@ func main() {
 			}
 			fmt.Println(renderSuccess(fmt.Sprintf("python stubs successfully generated in %s", *outDir)))
 		}
+
+		// projectName variable is now available for use
+		// If no config file exists and no override provided, it will be an empty string
+		_ = projectName // You can use this variable as needed
 
 	case "help":
 		fmt.Println()
