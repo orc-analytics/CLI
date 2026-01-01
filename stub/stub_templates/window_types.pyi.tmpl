@@ -6,5 +6,11 @@ from orca_python import WindowType
 {{ .VarName | SanitiseVariableName }}: WindowType
 """
 {{ .Description | WrapText 72 | Indent 4 }}
+{{- if .MetadataKeyNames }}
+
+    Provides Metadata Fields:
+    [{{range $i, $v := .MetadataKeyNames}}{{if $i}},{{end}}"{{ $v }}"{{ end }}]
+{{- end }}
 """
+
 {{ end }}
