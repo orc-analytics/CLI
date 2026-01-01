@@ -10,7 +10,7 @@ const (
 	redisInternalPort  = 6379
 
 	// versions
-	orcaImageVersion = "0.11.0-rc.25be961"
+	orcaImageVersion = "0.11.0-rc.d8326d6"
 )
 
 var orcaContainers = []string{

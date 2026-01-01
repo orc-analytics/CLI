@@ -222,7 +222,7 @@ func main() {
 
 		type OrcaConfigFile struct {
 			ProjectName               string `json:"projectName"`
-			OrcaConnectionString      string `json:"connectionString"`
+			OrcaConnectionString      string `json:"orcaConnectionString"`
 			ProcessorPort             int    `json:"processorPort"`
 			ProcessorConnectionString string `json:"processorConnectionString"`
 		}
