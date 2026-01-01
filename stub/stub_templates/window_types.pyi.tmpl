@@ -2,5 +2,9 @@ from orca_python import WindowType
 
 # --- Global Window Types ---
 {{ range .AllWindows -}}
+# METADATA: {"Name": "{{ .Name }}", "Version": "{{ .Version }}", "MetadataFields": [{{range $i, $v := .MetadataKeyNames}}{{if $i}},{{end}}"{{ $v }}"{{ end }}]}
 {{ .VarName | SanitiseVariableName }}: WindowType
+"""
+{{ .Description | WrapText 72 | Indent 4 }}
+"""
 {{ end }}

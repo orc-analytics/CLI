@@ -2,5 +2,9 @@ from orca_python import MetadataField
 
 # --- Global Metadata Fields ---
 {{ range .AllMetadata -}}
+# METADATA: {"Name": "{{ .KeyName }}"}
 {{ .VarName | SanitiseVariableName }}: MetadataField
+"""
+{{ .Description | WrapText 72 | Indent 4 }}
+"""
 {{ end }}

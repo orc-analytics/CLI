@@ -17,7 +17,6 @@ const (
 	PYTHON_METADATA_FIELDS_TMPL = "stub_templates/window_metadata_fields.pyi.tmpl"
 	PYTHON_WINDOW_TYPES_TMPL    = "stub_templates/window_types.pyi.tmpl"
 	PYTHON_ALGORITHMS_TMPL      = "stub_templates/algorithms.pyi.tmpl"
-	PYTHON_PROCESSORS_TMPL      = "stub_templates/processors.pyi.tmpl"
 )
 
 //go:embed stub_templates/*.tmpl
@@ -27,7 +26,6 @@ var (
 	pythonAlgoTemplate       *template.Template
 	pythonMetadataTemplate   *template.Template
 	pythonWindowTypeTemplate *template.Template
-	pythonProcessorsTemplate *template.Template
 )
 
 type ReturnType string
@@ -54,7 +52,6 @@ func init() {
 	pythonAlgoTemplate = generateTemplate(PYTHON_ALGORITHMS_TMPL)
 	pythonMetadataTemplate = generateTemplate(PYTHON_METADATA_FIELDS_TMPL)
 	pythonWindowTypeTemplate = generateTemplate(PYTHON_WINDOW_TYPES_TMPL)
-	pythonProcessorsTemplate = generateTemplate(PYTHON_PROCESSORS_TMPL)
 }
 
 func wrapText(limit int, text string) string {
@@ -136,6 +133,7 @@ type Window struct {
 	Name             string
 	Version          string
 	Description      string
+	MetadataKeyNames []string
 	MetadataVarNames []string
 }
 
@@ -179,30 +177,31 @@ func mapInternalStateToTmpl(internalState *pb.InternalState) (error, *AllProcess
 			windowName := algo.GetWindowType().GetName()
 			windowVer := algo.GetWindowType().GetVersion()
 			windowKey := fmt.Sprintf("%v_%v", windowName, windowVer)
-			windowVarName := fmt.Sprintf("%v_stub", windowKey)
 
 			metadataVarNamesForWindow := make([]string, len(algo.GetWindowType().GetMetadataFields()))
+			metadataKeyNamesForWindow := make([]string, len(algo.GetWindowType().GetMetadataFields()))
 			for kk, metadata := range algo.GetWindowType().GetMetadataFields() {
 				mName := metadata.GetName()
-				mVarName := fmt.Sprintf("%v_stub", mName)
 
-				if _, ok := globalMetadataMap[mVarName]; !ok {
-					globalMetadataMap[mVarName] = Metadata{
-						VarName:     mVarName,
+				if _, ok := globalMetadataMap[mName]; !ok {
+					globalMetadataMap[mName] = Metadata{
+						VarName:     mName,
 						KeyName:     mName,
 						Description: metadata.GetDescription(),
 					}
 				}
-				metadataVarNamesForWindow[kk] = mVarName
+				metadataVarNamesForWindow[kk] = mName
+				metadataKeyNamesForWindow[kk] = mName
 			}
 
-			if _, ok := globalWindowsMap[windowVarName]; !ok {
-				globalWindowsMap[windowVarName] = Window{
-					VarName:          windowVarName,
+			if _, ok := globalWindowsMap[windowKey]; !ok {
+				globalWindowsMap[windowKey] = Window{
+					VarName:          windowKey,
 					Name:             windowName,
 					Version:          windowVer,
 					Description:      algo.GetWindowType().GetDescription(),
 					MetadataVarNames: metadataVarNamesForWindow,
+					MetadataKeyNames: metadataKeyNamesForWindow,
 				}
 			}
 
@@ -243,7 +242,7 @@ func mapInternalStateToTmpl(internalState *pb.InternalState) (error, *AllProcess
 				ProcessorRuntime: proc.GetRuntime(),
 				Version:          algo.GetVersion(),
 				ReturnType:       algoReturnType,
-				WindowVarName:    windowVarName,
+				WindowVarName:    windowKey,
 				Hash:             fmt.Sprintf("%x", algorithmHash),
 				Description:      algo.GetDescription(),
 			}
@@ -317,12 +316,6 @@ func GeneratePythonStubs(internalState *pb.InternalState, outDir string) error {
 	}
 	defer windowTypesFile.Close()
 
-	processorFile, err := os.Create(filepath.Join(outDir, "orca_python", "registry", "processors.pyi"))
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-	defer processorFile.Close()
-
 	metadataFieldsFile, err := os.Create(filepath.Join(outDir, "orca_python", "registry", "metadata_fields.pyi"))
 	if err != nil && !os.IsExist(err) {
 		return err
@@ -330,9 +323,6 @@ func GeneratePythonStubs(internalState *pb.InternalState, outDir string) error {
 	defer metadataFieldsFile.Close()
 
 	if err := pythonAlgoTemplate.Execute(algorithmsFile, tmplData); err != nil {
-		panic(err)
-	}
-	if err := pythonProcessorsTemplate.Execute(processorFile, tmplData); err != nil {
 		panic(err)
 	}
 	if err := pythonWindowTypeTemplate.Execute(windowTypesFile, tmplData); err != nil {
