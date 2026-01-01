@@ -200,7 +200,7 @@ func main() {
 
 		initCmd.Usage = func() {
 			fmt.Fprintf(os.Stderr, "Usage: orca init [options]\n\n")
-			fmt.Fprintf(os.Stderr, "Initialize orca.json configuration file\n\n")
+			fmt.Fprintf(os.Stderr, "Initialise orca.json configuration file\n\n")
 			fmt.Fprintf(os.Stderr, "Options:\n")
 			initCmd.PrintDefaults()
 		}
@@ -221,9 +221,10 @@ func main() {
 		}
 
 		type OrcaConfigFile struct {
-			ProjectName          string `json:"projectName"`
-			OrcaConnectionString string `json:"connectionString"`
-			ProcessorPort        int    `json:"processorPort"`
+			ProjectName               string `json:"projectName"`
+			OrcaConnectionString      string `json:"connectionString"`
+			ProcessorPort             int    `json:"processorPort"`
+			ProcessorConnectionString string `json:"processorConnectionString"`
 		}
 		preferredProcessorPort := 5377
 
@@ -254,9 +255,10 @@ func main() {
 		}
 
 		newConfig := OrcaConfigFile{
-			ProjectName:          projectName,
-			OrcaConnectionString: fmt.Sprintf("localhost:%s", orcaPort),
-			ProcessorPort:        processorPort,
+			ProjectName:               projectName,
+			OrcaConnectionString:      fmt.Sprintf("localhost:%s", orcaPort),
+			ProcessorPort:             processorPort,
+			ProcessorConnectionString: fmt.Sprintf("host.docker.internal:%d", processorPort),
 		}
 
 		configPath := "orca.json"
@@ -277,10 +279,12 @@ func main() {
 
 			// compare configurations
 			if existingConfig.OrcaConnectionString != newConfig.OrcaConnectionString ||
-				existingConfig.ProcessorPort != newConfig.ProcessorPort || existingConfig.ProjectName != newConfig.ProjectName {
+				existingConfig.ProcessorPort != newConfig.ProcessorPort ||
+				existingConfig.ProjectName != newConfig.ProjectName ||
+				existingConfig.ProcessorConnectionString != newConfig.ProcessorConnectionString {
 				fmt.Println("Existing orca.json found with different configuration:")
-				fmt.Printf("  Current - Connection: %s, Port: %d, Name: %s\n", existingConfig.OrcaConnectionString, existingConfig.ProcessorPort, existingConfig.ProjectName)
-				fmt.Printf("  New     - Connection: %s, Port: %d, Name: %s\n", newConfig.OrcaConnectionString, newConfig.ProcessorPort, newConfig.ProjectName)
+				fmt.Printf("  Current - Connection: %s, Port: %d, Name: %s, ProcessorConnection: %s\n", existingConfig.OrcaConnectionString, existingConfig.ProcessorPort, existingConfig.ProjectName, existingConfig.ProcessorConnectionString)
+				fmt.Printf("  New     - Connection: %s, Port: %d, Name: %s, ProcessorConnection: %s\n", newConfig.OrcaConnectionString, newConfig.ProcessorPort, newConfig.ProjectName, newConfig.ProcessorConnectionString)
 				fmt.Print("Do you want to update the configuration? (y/n): ")
 
 				var response string
@@ -312,6 +316,7 @@ func main() {
 		fmt.Printf("Project name: %s\n", newConfig.ProjectName)
 		fmt.Printf("Orca connection string: %s\n", newConfig.OrcaConnectionString)
 		fmt.Printf("Processor port: %d\n", newConfig.ProcessorPort)
+		fmt.Printf("Processor connection string: %s\n", newConfig.ProcessorConnectionString)
 
 	case "sync":
 		outDir := syncCmd.String("out", ".orca", "Output directory for Orca registry data")
