@@ -1,0 +1,6 @@
+from orca_python import WindowType
+
+# --- Global Window Types ---
+{{ range .AllWindows -}}
+{{ .VarName | SanitiseVariableName }}: WindowType
+{{ end }}

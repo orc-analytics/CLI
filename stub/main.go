@@ -13,12 +13,22 @@ import (
 	pb "github.com/orc-analytics/core/protobufs/go"
 )
 
-const PYTHON_STUB_FILE = "stub_templates/processor.pyi.tmpl"
+const (
+	PYTHON_METADATA_FIELDS_TMPL = "stub_templates/window_metadata_fields.pyi.tmpl"
+	PYTHON_WINDOW_TYPES_TMPL    = "stub_templates/window_types.pyi.tmpl"
+	PYTHON_ALGORITHMS_TMPL      = "stub_templates/algorithms.pyi.tmpl"
+	PYTHON_PROCESSORS_TMPL      = "stub_templates/processors.pyi.tmpl"
+)
 
 //go:embed stub_templates/*.tmpl
 var templateFS embed.FS
 
-var pythonTemplate *template.Template
+var (
+	pythonAlgoTemplate       *template.Template
+	pythonMetadataTemplate   *template.Template
+	pythonWindowTypeTemplate *template.Template
+	pythonProcessorsTemplate *template.Template
+)
 
 type ReturnType string
 
@@ -29,15 +39,22 @@ const (
 	arrayReturnType  ReturnType = "ArrayResult"
 )
 
-func init() {
-	baseName := filepath.Base(PYTHON_STUB_FILE)
-	pythonTemplate = template.Must(template.New(baseName).Funcs(
+func generateTemplate(templatePath string) *template.Template {
+	baseName := filepath.Base(templatePath)
+	parsedTemplate := template.Must(template.New(baseName).Funcs(
 		template.FuncMap{
 			"ToSnakeCase":          toSnakeCase,
 			"SanitiseVariableName": sanitiseVariableName,
 			"WrapText":             wrapText,
 			"Indent":               pythonIndent,
-		}).ParseFS(templateFS, PYTHON_STUB_FILE))
+		}).ParseFS(templateFS, templatePath))
+	return parsedTemplate
+}
+func init() {
+	pythonAlgoTemplate = generateTemplate(PYTHON_ALGORITHMS_TMPL)
+	pythonMetadataTemplate = generateTemplate(PYTHON_METADATA_FIELDS_TMPL)
+	pythonWindowTypeTemplate = generateTemplate(PYTHON_WINDOW_TYPES_TMPL)
+	pythonProcessorsTemplate = generateTemplate(PYTHON_PROCESSORS_TMPL)
 }
 
 func wrapText(limit int, text string) string {
@@ -123,14 +140,15 @@ type Window struct {
 }
 
 type Algorithm struct {
-	Name          string
-	VarName       string
-	Description   string
-	ProcessorName string
-	Version       string
-	WindowVarName string
-	ReturnType    ReturnType
-	Hash          string
+	Name             string
+	VarName          string
+	Description      string
+	ProcessorName    string
+	ProcessorRuntime string
+	Version          string
+	WindowVarName    string
+	ReturnType       ReturnType
+	Hash             string
 }
 
 type ProcessorData struct {
@@ -219,14 +237,15 @@ func mapInternalStateToTmpl(internalState *pb.InternalState) (error, *AllProcess
 			algorithmHash := h.Sum32()
 
 			supportedAlgorithms[jj] = Algorithm{
-				Name:          algo.GetName(),
-				VarName:       fmt.Sprintf("%v_%x", algo.GetName(), algorithmHash),
-				ProcessorName: proc.GetName(),
-				Version:       algo.GetVersion(),
-				ReturnType:    algoReturnType,
-				WindowVarName: windowVarName,
-				Hash:          fmt.Sprintf("%x", algorithmHash),
-				Description:   algo.GetDescription(),
+				Name:             algo.GetName(),
+				VarName:          fmt.Sprintf("%v_%x", algo.GetName(), algorithmHash),
+				ProcessorName:    proc.GetName(),
+				ProcessorRuntime: proc.GetRuntime(),
+				Version:          algo.GetVersion(),
+				ReturnType:       algoReturnType,
+				WindowVarName:    windowVarName,
+				Hash:             fmt.Sprintf("%x", algorithmHash),
+				Description:      algo.GetDescription(),
 			}
 		}
 
@@ -265,26 +284,61 @@ func mapInternalStateToTmpl(internalState *pb.InternalState) (error, *AllProcess
 	}
 }
 
-func GeneratePythonStub(internalState *pb.InternalState, outDir string) error {
+func GeneratePythonStubs(internalState *pb.InternalState, outDir string) error {
 
-	err, processorTmpl := mapInternalStateToTmpl(internalState)
+	err, tmplData := mapInternalStateToTmpl(internalState)
 	if err != nil {
 		return fmt.Errorf("could not parse internal state: %w", err)
 	}
 
 	err = os.Mkdir(outDir, 0750)
+	err = os.MkdirAll(filepath.Join(outDir, "orca_python", "registry"), 0750)
 
 	if err != nil && !os.IsExist(err) {
 		return (err)
 	}
 
-	outFile, err := os.Create(filepath.Join(outDir, "orca_stub.pyi"))
+	initFile, err := os.Create(filepath.Join(outDir, "orca_python", "registry", "__init__.pyi"))
+
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
+	initFile.Close()
 
-	defer outFile.Close()
-	if err := pythonTemplate.Execute(outFile, processorTmpl); err != nil {
+	algorithmsFile, err := os.Create(filepath.Join(outDir, "orca_python", "registry", "algorithms.pyi"))
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+	defer algorithmsFile.Close()
+
+	windowTypesFile, err := os.Create(filepath.Join(outDir, "orca_python", "registry", "window_types.pyi"))
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+	defer windowTypesFile.Close()
+
+	processorFile, err := os.Create(filepath.Join(outDir, "orca_python", "registry", "processors.pyi"))
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+	defer processorFile.Close()
+
+	metadataFieldsFile, err := os.Create(filepath.Join(outDir, "orca_python", "registry", "metadata_fields.pyi"))
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+	defer metadataFieldsFile.Close()
+
+	if err := pythonAlgoTemplate.Execute(algorithmsFile, tmplData); err != nil {
+		panic(err)
+	}
+	if err := pythonProcessorsTemplate.Execute(processorFile, tmplData); err != nil {
+		panic(err)
+	}
+	if err := pythonWindowTypeTemplate.Execute(windowTypesFile, tmplData); err != nil {
+		panic(err)
+	}
+	if err := pythonMetadataTemplate.Execute(metadataFieldsFile, tmplData); err != nil {
 		panic(err)
 	}
 	return nil

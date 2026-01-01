@@ -1,0 +1,6 @@
+from orca_python import Processor
+
+{{ range .Processors -}}
+# --- Processor: {{ .Name }} ---
+proc_{{ .Name | SanitiseVariableName }}: Processor
+{{ end }}

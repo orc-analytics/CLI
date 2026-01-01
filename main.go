@@ -486,7 +486,7 @@ func main() {
 		switch SDKType(*tgtSdk) {
 		case SDKPython:
 			fmt.Printf("Generating python stubs to %s\n", *outDir)
-			err := stub.GeneratePythonStub(internalState, *outDir)
+			err := stub.GeneratePythonStubs(internalState, *outDir)
 			if err != nil {
 				fmt.Println(renderError(fmt.Sprintf("Issue generating python stubs: %s", err)))
 				os.Exit(1)

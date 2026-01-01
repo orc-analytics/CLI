@@ -1,0 +1,18 @@
+from orca_python import (
+    ExecutionParams,
+{{- range .ImportTypes }}
+    {{ . }},
+{{- end }}
+)
+
+{{ range .Processors -}}
+{{ range .Algorithms -}}
+# METADATA: {"Name": "{{ .Name }}", "Version": "{{ .Version }}", "ProcessorName": "{{ .ProcessorName }}", "ProcessorRuntime": "{{ .ProcessorRuntime }}"}
+def {{ .VarName | ToSnakeCase | SanitiseVariableName }}(params: ExecutionParams) -> {{ .ReturnType }}:
+    """
+{{ .Description | WrapText 72 | Indent 4 }}
+    """
+    ...
+
+{{ end -}}
+{{ end -}}

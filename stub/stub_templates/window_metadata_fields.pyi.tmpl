@@ -1,0 +1,6 @@
+from orca_python import MetadataField
+
+# --- Global Metadata Fields ---
+{{ range .AllMetadata -}}
+{{ .VarName | SanitiseVariableName }}: MetadataField
+{{ end }}
