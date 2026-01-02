@@ -4,22 +4,6 @@ set -e
 
 REPO="orc-analytics/CLI"
 INSTALL_NAME="orca"
-USE_RC=false
-
-# Parse command line arguments
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    --rc)
-      USE_RC=true
-      shift
-      ;;
-    *)
-      echo "Unknown option: $1"
-      echo "Usage: $0 [--rc]"
-      exit 1
-      ;;
-  esac
-done
 
 # Disallow root user
 if [ "$EUID" -eq 0 ]; then
@@ -77,24 +61,12 @@ detect_os() {
 
 # Get latest release version from GitHub API
 get_latest_version() {
-  if [ "$USE_RC" = true ]; then
-    echo "Fetching latest Orca CLI release candidate..."
-    # get all releases including pre-releases, filter for RC versions
-    LATEST_VERSION=$(curl -s https://api.github.com/repos/{$REPO}/releases | \
-      grep -B 20 '"prerelease": true' | \
+    echo "Fetching latest Orca CLI release..."
+    LATEST_VERSION=$(curl -s https://api.github.com/repos/{$REPO}/releases/latest | \
       grep '"tag_name"' | \
       head -n 1 | \
       sed 's/.*"tag_name": "\([^"]*\)".*/\1/')
-  else
-    echo "Fetching latest stable Orca CLI version..."
-    # Get latest stable release (non-prerelease)
-    LATEST_VERSION=$(curl -s https://api.github.com/repos/{$REPO}/releases | \
-      grep -B 20 '"prerelease": false' | \
-      grep '"tag_name"' | \
-      head -n 1 | \
-      sed 's/.*"tag_name": "\([^"]*\)".*/\1/')
-  fi
-    
+
   echo "$LATEST_VERSION"
   
   if [ -z "$LATEST_VERSION" ] || [ "$LATEST_VERSION" = "null" ]; then
