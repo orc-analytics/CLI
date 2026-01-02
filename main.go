@@ -324,8 +324,8 @@ func main() {
 		tgtSdk := syncCmd.String("sdk", "", "The SDK to generate type stubs for - python|go|typescript|zig|rust (defaults to inferring from the environment)")
 		secure := syncCmd.Bool("secure", false, "Set to connect to Orca core with System Default Root CA credentials (via TLS). Only use when using a custom Orca connection string that supports TLS")
 		caCert := syncCmd.String("caCert", "", "Path to custom CA certificate file (PEM format) for TLS verification")
-		configPath := syncCmd.String("config", "orca.json", "Path to orca.json configuration file")
-		projectNameOverride := syncCmd.String("projectName", "", "Override project name to exclude from sync stubs. Overrides the project name in the orca config file")
+		configPath := syncCmd.String("config", "orca.json", "Path to orca.json configuration file. Used to get the project name.")
+		projectNameOverride := syncCmd.String("projectName", "", "Specify a project to exclude stubs from. Defaults the `orca.json`, or '' if it can't be found.")
 
 		syncCmd.Usage = func() {
 			fmt.Fprintf(os.Stderr, "Usage: orca sync [options]\n\n")
@@ -361,10 +361,11 @@ func main() {
 		if *projectNameOverride != "" {
 			// use the command-line override if provided
 			projectName = *projectNameOverride
-			fmt.Printf("Using project name from command line: %s\n", projectName)
+			fmt.Printf("Excluding algorithms from project name: '%s'\n", projectName)
 		} else {
 			// try to load from config file
 			if _, err := os.Stat(*configPath); err == nil {
+				fmt.Println("Found config file")
 				configData, err := os.ReadFile(*configPath)
 				if err != nil {
 					fmt.Println(renderError(fmt.Sprintf("Failed to read %s: %v", *configPath, err)))
@@ -380,7 +381,7 @@ func main() {
 
 				projectName = config.ProjectName
 				if projectName != "" {
-					fmt.Printf("Using project name from %s: %s\n", *configPath, projectName)
+					fmt.Printf("Excluding algorithms from project name '%s', as defined in %s\n", projectName, *configPath)
 				}
 			} else if *configPath != "orca.json" {
 				// Only error if user explicitly specified a config file that doesn't exist
@@ -465,7 +466,7 @@ func main() {
 			connStr = *orcaConnStr
 		}
 
-		fmt.Printf("Generating registry data to %s\n", *outDir)
+		// fmt.Printf("Generating registry data to %s\n", *outDir)
 
 		if err := os.MkdirAll(*outDir, 0755); err != nil {
 			fmt.Println(renderError(fmt.Sprintf("Failed to create output directory: %v", err)))
@@ -524,19 +525,22 @@ func main() {
 			fmt.Println(renderError(fmt.Sprintf("Issue contacting Orca: %v", err)))
 			os.Exit(1)
 		}
-		data, err := json.MarshalIndent(internalState, "", "    ")
-		if err != nil {
-			fmt.Println(renderError(fmt.Sprintf("Failed to marshal configuration: %v", err)))
-			os.Exit(1)
-		}
 
-		err = os.WriteFile(filepath.Join(*outDir, "registry.json"), data, 0644)
-		if err != nil {
-			fmt.Println(renderError(fmt.Sprintf("Failed to write orca.json: %v", err)))
-			os.Exit(1)
-		}
+		// TODO: include back in if we need it
 
-		fmt.Println(renderSuccess(fmt.Sprintf("registry data generated successfully in %s", filepath.Join(*outDir, "registry.json"))))
+		// data, err := json.MarshalIndent(internalState, "", "    ")
+		// if err != nil {
+		// 	fmt.Println(renderError(fmt.Sprintf("Failed to marshal configuration: %v", err)))
+		// 	os.Exit(1)
+		// }
+		//
+		// err = os.WriteFile(filepath.Join(*outDir, "registry.json"), data, 0644)
+		// if err != nil {
+		// 	fmt.Println(renderError(fmt.Sprintf("Failed to write orca.json: %v", err)))
+		// 	os.Exit(1)
+		// }
+		//
+		// fmt.Println(renderSuccess(fmt.Sprintf("registry data generated successfully in %s", filepath.Join(*outDir, "registry.json"))))
 
 		switch SDKType(*tgtSdk) {
 		case SDKPython:

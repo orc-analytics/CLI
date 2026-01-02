@@ -1,0 +1,119 @@
+name: Promote Release
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+jobs:
+  promote-to-stable:
+    name: Promote RC to Stable Release
+    # Only run if the PR was merged AND the source branch was release/*
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find latest prerelease and extract version
+        id: find_version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            
+            // Find latest prerelease
+            const latestRC = releases.data.find(r => r.prerelease && r.tag_name.includes('-rc.'));
+            
+            if (!latestRC) {
+              core.setFailed('No RC release found to promote');
+              return;
+            }
+            
+            console.log(`Found RC release: ${latestRC.tag_name}`);
+            
+            // Extract stable version (e.g., v1.0.0-rc.1 -> v1.0.0)
+            const stableTag = latestRC.tag_name.replace(/-rc\..*$/, '');
+            console.log(`Will create stable release: ${stableTag}`);
+            
+            core.setOutput('rc_tag', latestRC.tag_name);
+            core.setOutput('stable_tag', stableTag);
+            core.setOutput('rc_release_id', latestRC.id);
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Create stable tag
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag -a ${{ steps.find_version.outputs.stable_tag }} -m "Release ${{ steps.find_version.outputs.stable_tag }}"
+          git push origin ${{ steps.find_version.outputs.stable_tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run GoReleaser for stable release
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete RC release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const rcReleaseId = '${{ steps.find_version.outputs.rc_release_id }}';
+            const rcTag = '${{ steps.find_version.outputs.rc_tag }}';
+            
+            console.log(`Deleting RC release: ${rcTag}`);
+            
+            await github.rest.repos.deleteRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: rcReleaseId
+            });
+            
+            await github.rest.git.deleteRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `tags/${rcTag}`
+            });
+
+      - name: Create Final Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.find_version.outputs.stable_tag }}
+          prerelease: false
+          draft: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
