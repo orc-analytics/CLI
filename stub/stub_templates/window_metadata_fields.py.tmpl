@@ -1,0 +1,27 @@
+from typing import Any
+from orca_python import MetadataField
+
+__all__ = [
+{{- range .AllMetadata }}
+    "{{ .VarName | SanitiseVariableName }}",
+{{- end }}
+]
+
+class _Field:
+    def __init__(self, name: str, description: str, metadata: dict[str, Any]):
+        self.name = name
+        self.description = description
+        self.__orca_is_remote__ = True
+        self.__orca_metadata__ = metadata
+
+{{ range .AllMetadata -}}
+{{ $varName := .VarName | SanitiseVariableName -}}
+
+{{ $varName }}: MetadataField = _Field( # type: ignore
+    name="{{ .KeyName }}",
+    description="{{ .Description }}",
+    metadata={"Name": "{{ .KeyName }}", "Description": "{{ .Description }}"}
+)
+"""{{ .Description | WrapText 72 | Indent 0 }}"""
+
+{{ end }}

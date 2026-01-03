@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	PYTHON_METADATA_FIELDS_TMPL = "stub_templates/window_metadata_fields.pyi.tmpl"
-	PYTHON_WINDOW_TYPES_TMPL    = "stub_templates/window_types.pyi.tmpl"
-	PYTHON_ALGORITHMS_TMPL      = "stub_templates/algorithms.pyi.tmpl"
+	PYTHON_METADATA_FIELDS_TMPL = "stub_templates/window_metadata_fields.py.tmpl"
+	PYTHON_WINDOW_TYPES_TMPL    = "stub_templates/window_types.py.tmpl"
+	PYTHON_ALGORITHMS_TMPL      = "stub_templates/algorithms.py.tmpl"
 )
 
 //go:embed stub_templates/*.tmpl
@@ -291,32 +291,32 @@ func GeneratePythonStubs(internalState *pb.InternalState, outDir string) error {
 	}
 
 	err = os.Mkdir(outDir, 0750)
-	err = os.MkdirAll(filepath.Join(outDir, "orca_python", "registry"), 0750)
+	err = os.MkdirAll(filepath.Join(outDir, "registry"), 0750)
 
 	if err != nil && !os.IsExist(err) {
 		return (err)
 	}
 
-	initFile, err := os.Create(filepath.Join(outDir, "orca_python", "registry", "__init__.pyi"))
+	initFile, err := os.Create(filepath.Join(outDir, "registry", "__init__.py"))
 
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 	initFile.Close()
 
-	algorithmsFile, err := os.Create(filepath.Join(outDir, "orca_python", "registry", "algorithms.pyi"))
+	algorithmsFile, err := os.Create(filepath.Join(outDir, "registry", "algorithms.py"))
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 	defer algorithmsFile.Close()
 
-	windowTypesFile, err := os.Create(filepath.Join(outDir, "orca_python", "registry", "window_types.pyi"))
+	windowTypesFile, err := os.Create(filepath.Join(outDir, "registry", "window_types.py"))
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 	defer windowTypesFile.Close()
 
-	metadataFieldsFile, err := os.Create(filepath.Join(outDir, "orca_python", "registry", "metadata_fields.pyi"))
+	metadataFieldsFile, err := os.Create(filepath.Join(outDir, "registry", "metadata_fields.py"))
 	if err != nil && !os.IsExist(err) {
 		return err
 	}

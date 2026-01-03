@@ -348,7 +348,7 @@ func main() {
 		fmt.Printf("Processor connection string: %s\n", newConfig.ProcessorConnectionString)
 
 	case "sync":
-		outDir := syncCmd.String("out", ".orca", "Output directory for Orca registry data")
+		outDir := syncCmd.String("out", "./", "Output directory for Orca registry data")
 		orcaConnStr := syncCmd.String("connStr", "", "Orca connection string (defaults to local Orca)")
 		tgtSdk := syncCmd.String("sdk", "", "The SDK to generate type stubs for - python|go|typescript|zig|rust (defaults to inferring from the environment)")
 		secure := syncCmd.Bool("secure", false, "Set to connect to Orca core with System Default Root CA credentials (via TLS). Only use when using a custom Orca connection string that supports TLS")

@@ -1,0 +1,39 @@
+from orca_python import (
+    ExecutionParams,
+{{- range .ImportTypes }}
+    {{ . }},
+{{- end }}
+)
+
+__all__ = [
+{{- range .Processors -}}
+{{- range .Algorithms }}
+    "{{ .VarName | ToSnakeCase | SanitiseVariableName }}",
+{{- end -}}
+{{- end }}
+]
+
+{{ range .Processors -}}
+{{ range .Algorithms -}}
+{{ $varName := .VarName | ToSnakeCase | SanitiseVariableName -}}
+
+def {{ $varName }}(params: ExecutionParams) -> {{ .ReturnType }}:
+    """
+{{ .Description | WrapText 72 | Indent 4 }}
+    """
+    _ = params
+    raise NotImplementedError(
+        "{{ $varName }} is a remote algorithm and cannot be executed locally."
+    )
+
+# Attach Orca metadata (type: ignore handles linter strictness)
+{{ $varName }}.__orca_is_remote__ = True  # type: ignore
+{{ $varName }}.__orca_metadata__ = {  # type: ignore
+    "Name": "{{ .Name }}",
+    "Version": "{{ .Version }}",
+    "ProcessorName": "{{ .ProcessorName }}",
+    "ProcessorRuntime": "{{ .ProcessorRuntime }}",
+}
+
+{{ end -}}
+{{ end -}}

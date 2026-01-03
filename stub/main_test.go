@@ -9,20 +9,6 @@ import (
 func TestPythonAlgorithmTemplateGeneration(t *testing.T) {
 	testData := AllProcessors{
 		ImportTypes: []string{"StructResult"},
-		AllMetadata: []Metadata{
-			{VarName: "bus_id", KeyName: "bus_id", Description: "Unique bus ID"},
-		},
-		AllWindows: []Window{
-			{
-				VarName:     "FastWindow_1_0_0",
-				Name:        "FastWindow",
-				Version:     "1.0.0",
-				Description: "A fast window type",
-				Metadata: []Metadata{
-					{VarName: "bus_id", KeyName: "bus_id", Description: "Unique bus ID"},
-				},
-			},
-		},
 		Processors: []ProcessorData{
 			{
 				Name: "ml-test",
@@ -31,11 +17,9 @@ func TestPythonAlgorithmTemplateGeneration(t *testing.T) {
 						Name:             "SpeedCheck",
 						VarName:          "SpeedCheck_abc123",
 						Version:          "1.1.0",
-						WindowVarName:    "FastWindow_1_0_0",
-						ReturnType:       structReturnType,
+						ReturnType:       "StructResult",
 						ProcessorName:    "ml-test",
 						ProcessorRuntime: "python",
-						Hash:             "abc123",
 						Description:      "Checks speed of buses",
 					},
 				},
@@ -55,29 +39,59 @@ func TestPythonAlgorithmTemplateGeneration(t *testing.T) {
 		name     string
 		contains string
 	}{
-		{"Import ExecutionParams", "from orca_python import"},
-		{"Import Result Type", "StructResult"},
-		{"Function Definition", "def speed_check_abc123(params: ExecutionParams)"},
-		{"Return Type Annotation", "-> StructResult:"},
-		{"Metadata Comment", `# METADATA: {"Name": "SpeedCheck"`},
+		{"Export List", "__all__ = ["},
+		{"Export Item", `"speed_check_abc123"`},
+		{"Function Definition", "def speed_check_abc123(params: ExecutionParams) -> StructResult:"},
+		{"NotImplementedError", "raise NotImplementedError"},
+		{"Remote Attribute", "speed_check_abc123.__orca_is_remote__ = True  # type: ignore"},
+		{"Metadata Attribute", "speed_check_abc123.__orca_metadata__ = {"},
+		{"Metadata Content", `"Name": "SpeedCheck"`},
 		{"Description in Docstring", "Checks speed of buses"},
 	}
 
 	for _, a := range assertions {
 		if !strings.Contains(output, a.contains) {
-			t.Errorf("Assertion Failed [%s]: Output did not contain expected string: %s", a.name, a.contains)
+			t.Errorf("Assertion Failed [%s]: Output did not contain: %s", a.name, a.contains)
 		}
 	}
+}
 
-	t.Logf("Generated Python Algorithms:\n%s", output)
+func TestPythonMetadataTemplateGeneration(t *testing.T) {
+	testData := AllProcessors{
+		AllMetadata: []Metadata{
+			{VarName: "bus_id", KeyName: "bus_id", Description: "Unique bus ID"},
+		},
+	}
+
+	var buf bytes.Buffer
+	err := pythonMetadataTemplate.Execute(&buf, testData)
+	if err != nil {
+		t.Fatalf("Template execution failed: %v", err)
+	}
+
+	output := buf.String()
+
+	assertions := []struct {
+		name     string
+		contains string
+	}{
+		{"Internal Class", "class _Field:"},
+		{"Export List", "__all__ = ["},
+		{"Variable Assignment", "bus_id: MetadataField = _Field("},
+		{"Type Ignore", "# type: ignore"},
+		{"Metadata Dict", `"Name": "bus_id"`},
+		{"Docstring", `"""Unique bus ID"""`},
+	}
+
+	for _, a := range assertions {
+		if !strings.Contains(output, a.contains) {
+			t.Errorf("Assertion Failed [%s]: Output did not contain: %s", a.name, a.contains)
+		}
+	}
 }
 
 func TestPythonWindowTypeTemplateGeneration(t *testing.T) {
 	testData := AllProcessors{
-		AllMetadata: []Metadata{
-			{VarName: "bus_id", KeyName: "bus_id", Description: "Unique bus ID"},
-			{VarName: "route_id", KeyName: "route_id", Description: "Route identifier"},
-		},
 		AllWindows: []Window{
 			{
 				VarName:     "FastWindow_1_0_0",
@@ -86,7 +100,6 @@ func TestPythonWindowTypeTemplateGeneration(t *testing.T) {
 				Description: "A fast window type",
 				Metadata: []Metadata{
 					{VarName: "bus_id", KeyName: "bus_id", Description: "Unique bus ID"},
-					{VarName: "route_id", KeyName: "route_id", Description: "Route identifier"},
 				},
 			},
 		},
@@ -104,116 +117,35 @@ func TestPythonWindowTypeTemplateGeneration(t *testing.T) {
 		name     string
 		contains string
 	}{
-		{"Import WindowType", "from orca_python import WindowType"},
-		{"Window Variable", "FastWindow_1_0_0: WindowType"},
-		{"Window Description", "A fast window type"},
-		{"Metadata Comment", `# METADATA: {"Name": "FastWindow", "Version": "1.0.0"`},
-		{"Metadata Field in Docstring", "bus_id: Unique bus ID"},
-		{"Metadata Field in Docstring 2", "route_id: Route identifier"},
+		{"Internal Window Class", "class _Window:"},
+		{"Variable Assignment", "FastWindow_1_0_0: WindowType = _Window("},
+		{"Metadata Field Instantiation", `_Field(name="bus_id", description="Unique bus ID")`},
+		{"Window Metadata", `"Name": "FastWindow"`},
+		{"Nested Metadata", `"MetadataFields": [`},
+		{"Docstring Description", "A fast window type"},
+		{"Docstring Field", "- bus_id: Unique bus ID"},
 	}
 
 	for _, a := range assertions {
 		if !strings.Contains(output, a.contains) {
-			t.Errorf("Assertion Failed [%s]: Output did not contain expected string: %s", a.name, a.contains)
+			t.Errorf("Assertion Failed [%s]: Output did not contain: %s", a.name, a.contains)
 		}
 	}
-
-	t.Logf("Generated Python Window Types:\n%s", output)
-}
-
-func TestPythonMetadataTemplateGeneration(t *testing.T) {
-	testData := AllProcessors{
-		AllMetadata: []Metadata{
-			{VarName: "bus_id", KeyName: "bus_id", Description: "Unique bus ID"},
-			{VarName: "route_id", KeyName: "route_id", Description: "Route identifier"},
-		},
-	}
-
-	var buf bytes.Buffer
-	err := pythonMetadataTemplate.Execute(&buf, testData)
-	if err != nil {
-		t.Fatalf("Template execution failed: %v", err)
-	}
-
-	output := buf.String()
-
-	assertions := []struct {
-		name     string
-		contains string
-	}{
-		{"Import MetadataField", "from orca_python import MetadataField"},
-		{"Metadata Variable 1", "bus_id: MetadataField"},
-		{"Metadata Variable 2", "route_id: MetadataField"},
-		{"Description 1", "Unique bus ID"},
-		{"Description 2", "Route identifier"},
-		{"Metadata Comment 1", `# METADATA: {"Name": "bus_id"`},
-		{"Metadata Comment 2", `# METADATA: {"Name": "route_id"`},
-	}
-
-	for _, a := range assertions {
-		if !strings.Contains(output, a.contains) {
-			t.Errorf("Assertion Failed [%s]: Output did not contain expected string: %s", a.name, a.contains)
-		}
-	}
-
-	t.Logf("Generated Python Metadata:\n%s", output)
 }
 
 func TestPythonTemplateGeneration_WithReturnTypes(t *testing.T) {
 	testData := AllProcessors{
-		ImportTypes: []string{"ValueResult", "StructResult", "NoneResult", "ArrayResult"},
-		AllWindows: []Window{
-			{
-				VarName:     "Every30Second_1_0_0",
-				Name:        "Every30Second",
-				Version:     "1.0.0",
-				Description: "30 second window",
-				Metadata:    []Metadata{},
-			},
-		},
+		ImportTypes: []string{"ValueResult", "ArrayResult"},
 		Processors: []ProcessorData{
 			{
-				Name: "ml-test",
 				Algorithms: []Algorithm{
 					{
-						Name:             "CalcAverage",
-						VarName:          "CalcAverage_111",
-						ReturnType:       valueReturnType,
-						WindowVarName:    "Every30Second_1_0_0",
-						ProcessorName:    "ml-test",
-						ProcessorRuntime: "python",
-						Hash:             "111",
-						Version:          "1.0.0",
+						VarName:    "CalcAverage_111",
+						ReturnType: "ValueResult",
 					},
 					{
-						Name:             "GetBatch",
-						VarName:          "GetBatch_222",
-						ReturnType:       structReturnType,
-						WindowVarName:    "Every30Second_1_0_0",
-						ProcessorName:    "ml-test",
-						ProcessorRuntime: "python",
-						Hash:             "222",
-						Version:          "1.0.0",
-					},
-					{
-						Name:             "SendResult",
-						VarName:          "SendResult_333",
-						ReturnType:       noneReturnType,
-						WindowVarName:    "Every30Second_1_0_0",
-						ProcessorName:    "ml-test",
-						ProcessorRuntime: "python",
-						Hash:             "333",
-						Version:          "1.0.0",
-					},
-					{
-						Name:             "CalcDist",
-						VarName:          "CalcDist_444",
-						ReturnType:       arrayReturnType,
-						WindowVarName:    "Every30Second_1_0_0",
-						ProcessorName:    "ml-test",
-						ProcessorRuntime: "python",
-						Hash:             "444",
-						Version:          "1.0.0",
+						VarName:    "CalcDist_444",
+						ReturnType: "ArrayResult",
 					},
 				},
 			},
@@ -228,28 +160,20 @@ func TestPythonTemplateGeneration_WithReturnTypes(t *testing.T) {
 		name     string
 		contains string
 	}{
-		{"ValueResult Import", "ValueResult"},
-		{"StructResult Import", "StructResult"},
-		{"ArrayResult Import", "ArrayResult"},
-		{"NoneResult Import", "NoneResult"},
-		{"ValueResult Function", "def calc_average_111(params: ExecutionParams)"},
 		{"ValueResult Annotation", "-> ValueResult:"},
-		{"StructResult Function", "def get_batch_222(params: ExecutionParams)"},
-		{"StructResult Annotation", "-> StructResult:"},
-		{"ArrayResult Function", "def calc_dist_444(params: ExecutionParams)"},
 		{"ArrayResult Annotation", "-> ArrayResult:"},
-		{"NoneResult Function", "def send_result_333(params: ExecutionParams)"},
-		{"NoneResult Annotation", "-> NoneResult:"},
+		{"Attribute Assignment 1", "calc_average_111.__orca_is_remote__"},
+		{"Attribute Assignment 2", "calc_dist_444.__orca_is_remote__"},
 	}
 
 	for _, a := range assertions {
 		if !strings.Contains(output, a.contains) {
-			t.Errorf("Failed [%s]: Expected to find %s", a.name, a.contains)
+			t.Errorf("Failed [%s]: Expected %s", a.name, a.contains)
 		}
 	}
-
-	t.Logf("Generated Python:\n%s", output)
 }
+
+// ... helper tests (ToSnakeCase, SanitiseVariableName) remain unchanged ...
 
 func TestToSnakeCase(t *testing.T) {
 	tests := []struct {

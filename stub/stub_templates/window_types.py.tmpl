@@ -1,0 +1,60 @@
+from typing import List, Any
+from orca_python import WindowType
+
+__all__ = [
+{{- range .AllWindows }}
+    "{{ .VarName | SanitiseVariableName }}",
+{{- end }}
+]
+
+class _Field:
+    def __init__(self, name: str, description: str):
+        self.name = name
+        self.description = description
+        self.__orca_is_remote__ = True
+
+class _Window:
+    def __init__(self, name: str, version: str, description: str, fields: List[_Field], metadata: dict[str, Any]):
+        self.name = name
+        self.version = version
+        self.description = description
+        self.metadataFields = fields
+        self.__orca_is_remote__ = True
+        self.__orca_metadata__ = metadata
+
+{{ range .AllWindows -}}
+{{ $varName := .VarName | SanitiseVariableName -}}
+
+{{ $varName }}: WindowType = _Window( # type: ignore
+    name="{{ .Name }}",
+    version="{{ .Version }}",
+    description="{{ .Description }}",
+    fields=[
+        {{- range .Metadata }}
+        _Field(name="{{ .KeyName }}", description="{{ .Description }}"),
+        {{- end }}
+    ],
+    metadata={
+        "Name": "{{ .Name }}",
+        "Version": "{{ .Version }}",
+        "Description": "{{ .Description }}",
+        "MetadataFields": [
+            {{- range $i, $v := .Metadata -}}
+            {{- if $i }}, {{ end -}}
+            {"Name": "{{ $v.KeyName }}", "Description": "{{ $v.Description }}"}
+            {{- end -}}
+        ],
+    }
+)
+"""
+{{ .Description | WrapText 72 | Indent 0 }}
+{{- if .Metadata }}
+
+Provides Metadata Fields:
+{{- range .Metadata }}
+- {{ .KeyName }}: {{ .Description }}
+{{- end }}
+{{- end }}
+"""
+
+{{ end }}
