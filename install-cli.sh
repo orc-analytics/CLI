@@ -152,9 +152,9 @@ install_binary() {
   rm -rf "$TMP_DIR"
 
   echo ""
-  echo "✅ Orca CLI installed to: $FINAL_BINARY"
-  echo "✅ Symlink created at: $SYMLINK_PATH"
-  echo "🔗 To get started, visit: https://github.com/orc-analytics/core#readme"
+  echo "Orca CLI installed to: $FINAL_BINARY"
+  echo "Symlink created at: $SYMLINK_PATH"
+  echo "To get started, visit: https://github.com/orc-analytics/core#readme"
   
   # Verify installation
   if command -v "$INSTALL_NAME" &> /dev/null; then
@@ -162,7 +162,7 @@ install_binary() {
     echo "Installation verified. Run '$INSTALL_NAME --version' to confirm."
   else
     echo ""
-    echo "⚠️  Note: $BIN_DIR may not be in your PATH."
+    echo "   Note: $BIN_DIR may not be in your PATH."
     echo "   Add it to your PATH by adding this line to your shell config:"
     echo "   export PATH=\"$BIN_DIR:\$PATH\""
   fi
