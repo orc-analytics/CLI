@@ -7,7 +7,7 @@ The Orca CLI is a command-line tool for managing the Orca analytics platform dur
 ### Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/orc-analytics/cli/main/install-cli.sh | bash
+curl -fsSL https://raw.githubusercontent.com/orca-telemetry/cli/main/install-cli.sh | bash
 ```
 
 ### Usage
@@ -36,4 +36,4 @@ For complete documentation, including detailed command reference, configuration 
 
 ## Support
 
-For issues or feature requests, please [open an issue](https://github.com/orc-analytics/cli/issues).
+For issues or feature requests, please [open an issue](https://github.com/orca-telemetry/cli/issues).

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"text/template"
 
-	pb "github.com/orc-analytics/core/protobufs/go"
+	pb "github.com/orca-telemetry/core/protobufs/go"
 )
 
 const (

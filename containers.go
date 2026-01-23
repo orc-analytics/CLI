@@ -107,7 +107,7 @@ func startOrca(networkName string) {
 			"-e", fmt.Sprintf("ORCA_CONNECTION_STRING=postgresql://orca:orca@%s:5432/orca?sslmode=disable", pgContainerName),
 			"-e", "ORCA_PORT=3335",
 			"-e", "ORCA_LOG_LEVEL=DEBUG",
-			fmt.Sprintf("ghcr.io/orc-analytics/core:%v", orcaImageVersion),
+			fmt.Sprintf("ghcr.io/orca-telemetry/core:%v", orcaImageVersion),
 			"-migrate",
 		}
 		runCmd := exec.Command("docker", args...)

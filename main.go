@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orc-analytics/cli/stub"
-	pb "github.com/orc-analytics/core/protobufs/go"
+	"github.com/orca-telemetry/cli/stub"
+	pb "github.com/orca-telemetry/core/protobufs/go"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
