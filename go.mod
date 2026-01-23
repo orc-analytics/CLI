@@ -1,4 +1,4 @@
-module github.com/orc-analytics/cli
+module github.com/orca-telemetry/cli
 
 go 1.24.0
 

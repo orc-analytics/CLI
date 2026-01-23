@@ -441,7 +441,7 @@ func destroy() {
 	fmt.Println("To clean up Docker images related to Orca, you can run these commands:")
 	fmt.Println("  docker rmi postgres               # Remove PostgreSQL image")
 	fmt.Println("  docker rmi redis                  # Remove Redis image")
-	fmt.Println("  docker rmi ghcr.io/orc-analytics/core  # Remove Orca image")
+	fmt.Println("  docker rmi ghcr.io/orca-telemetry/core  # Remove Orca image")
 	fmt.Println()
 	fmt.Println("Or to remove all unused images:")
 	fmt.Println("  docker image prune -a  # Remove all unused images")
