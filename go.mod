@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/muesli/termenv v0.16.0
-	github.com/orc-analytics/core v0.11.2
+	github.com/orca-telemetry/core v0.12.0
 	google.golang.org/grpc v1.77.0
 )
 
